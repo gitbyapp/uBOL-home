@@ -256,12 +256,12 @@
     "description": "This describes the 'complete' filtering mode"
   },
   "noFilteringModeDescription": {
-      "message": "List of websites for which no filtering will take place.",
-      "description": "A short description for the editable field which lists trusted sites"
+    "message": "List of websites for which no filtering will take place.",
+    "description": "A short description for the editable field which lists trusted sites"
   },
   "noFilteringModePlaceholder": {
-      "message": "[hostnames only]\nexample.com\ngames.example\n...",
-      "description": "Default text for in edit field"
+    "message": "[hostnames only]\nexample.com\ngames.example\n...",
+    "description": "Default text for in edit field"
   },
   "behaviorSectionLabel": {
     "message": "Behavior",
@@ -462,5 +462,9 @@
   "unpickerUsage": {
     "message": "Select a filter below to highlight matching elements in the web page. Click the trash can to remove a filter.",
     "description": "Summary description on how to use the tool to remove custom filters"
+  },
+  "pickerRootWarning": {
+    "message": "This filter matches the page root and could hide the entire page. Create it anyway?",
+    "description": "Confirmation before saving a cosmetic filter affecting html or body"
   }
 }
