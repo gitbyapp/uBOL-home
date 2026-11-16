@@ -1,0 +1,38 @@
+diff --git a/platform/mv3/extension/js/background.js b/platform/mv3/extension/js/background.js
+--- a/platform/mv3/extension/js/background.js
++++ b/platform/mv3/extension/js/background.js
+@@ -297,6 +297,18 @@
+ 
+ /******************************************************************************/
+ 
++// Chromium does not signal changes to the "Allow User Scripts" setting.
++// Reconcile when the user next opens uBOL's popup or settings page.
++async function reconcileUserScriptsPermission() {
++    const enabled = supportsUserScripts();
++    if ( enabled === rulesetConfig.userScripts ) { return; }
++    await registerUserScripts();
++    rulesetConfig.userScripts = enabled;
++    await saveRulesetConfig();
++}
++
++/******************************************************************************/
++
+ async function onMessage(request, sender) {
+ 
+     const tabId = sender?.tab?.id ?? false;
+@@ -417,6 +429,7 @@
+         return rulesetConfig;
+ 
+     case 'getOptionsPageData': {
++        await reconcileUserScriptsPermission();
+         const [
+             hasOmnipotence,
+             defaultFilteringMode,
+@@ -503,6 +516,7 @@
+         return setDeveloperMode(request.state);
+ 
+     case 'popupPanelData': {
++        await reconcileUserScriptsPermission();
+         const results = await Promise.all([
+             hasBroadHostPermissions(),
+             getFilteringMode(request.hostname),
