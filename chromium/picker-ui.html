@@ -27,7 +27,11 @@
         <label for="slider" data-i18n="pickerSliderLabel">_</label>
         <span id="resultsetCount"></span>
     </span>
-    <input id="slider" type="range" min="0" max="10" step="any">
+    <div class="sliderStepControls">
+        <button id="sliderStepBack" type="button" aria-label="-1">−</button>
+        <input id="slider" type="range" min="0" max="10" step="1">
+        <button id="sliderStepForward" type="button" aria-label="+1">+</button>
+    </div>
 </section>
 <section id="toolbar" data-view="0">
     <div>
