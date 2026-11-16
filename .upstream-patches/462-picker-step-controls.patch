@@ -1,0 +1,116 @@
+diff --git a/platform/mv3/extension/picker-ui.html b/platform/mv3/extension/picker-ui.html
+--- a/platform/mv3/extension/picker-ui.html
++++ b/platform/mv3/extension/picker-ui.html
+@@ -27,7 +27,11 @@
+         <label for="slider" data-i18n="pickerSliderLabel">_</label>
+         <span id="resultsetCount"></span>
+     </span>
++    <div class="sliderStepControls">
++        <button id="sliderStepBack" type="button" aria-label="Previous candidate">−</button>
++        <input id="slider" type="range" min="0" max="10" step="1">
++        <button id="sliderStepForward" type="button" aria-label="Next candidate">+</button>
++    </div>
+-    <input id="slider" type="range" min="0" max="10" step="any">
+ </section>
+ <section id="toolbar" data-view="0">
+     <div>
+diff --git a/platform/mv3/extension/css/picker-ui.css b/platform/mv3/extension/css/picker-ui.css
+--- a/platform/mv3/extension/css/picker-ui.css
++++ b/platform/mv3/extension/css/picker-ui.css
+@@ -143,3 +143,32 @@
+ #ubol-picker.preview #overlay path {
+     display: none;
+ }
++
++#ubol-picker .sliderStepControls {
++    align-items: center;
++    display: flex;
++    gap: 0.35em;
++}
++#ubol-picker .sliderStepControls #slider {
++    flex: 1 1 auto;
++    min-width: 0;
++}
++#ubol-picker .sliderStepControls button {
++    background-color: var(--surface-2);
++    border: 1px solid var(--border-2);
++    border-radius: 0.3em;
++    color: var(--ink-1);
++    cursor: pointer;
++    flex: 0 0 32px;
++    font-size: 1.2em;
++    min-height: 32px;
++    padding: 0;
++}
++#ubol-picker .sliderStepControls button:disabled {
++    cursor: default;
++    opacity: 0.45;
++}
++#ubol-picker .sliderStepControls button:focus-visible {
++    outline: 2px solid var(--ink-1);
++    outline-offset: 2px;
++}
+diff --git a/platform/mv3/extension/js/picker-ui.js b/platform/mv3/extension/js/picker-ui.js
+--- a/platform/mv3/extension/js/picker-ui.js
++++ b/platform/mv3/extension/js/picker-ui.js
+@@ -177,8 +177,20 @@
+ }
+ 
+ function updateSlider(i) {
++    if ( sliderParts.length === 0 ) {
++        sliderPartsPos = -1;
++        qs$('textarea').value = '';
++        qs$('#sliderStepBack').disabled = true;
++        qs$('#sliderStepForward').disabled = true;
++        dom.attr('#create', 'disabled', '');
++        return;
++    }
++    i = Math.min(Math.max(i, 0), sliderParts.length - 1);
+     if ( i === sliderPartsPos ) { return; }
+     sliderPartsPos = i;
++    qs$('#slider').value = i;
++    qs$('#sliderStepBack').disabled = i === 0;
++    qs$('#sliderStepForward').disabled = i === sliderParts.length - 1;
+     dom.cl.remove('#candidateFilters [data-part]', 'on');
+     const parts = sliderParts[i];
+     for ( const address of parts ) {
+@@ -191,6 +203,14 @@
+ 
+ /******************************************************************************/
+ 
++function stepSlider(direction) {
++    const next = sliderPartsPos + direction;
++    if ( next < 0 || next >= sliderParts.length ) { return; }
++    updateSlider(next);
++}
++
++/******************************************************************************/
++
+ function updateElementCount(details) {
+     const { count, error } = details;
+     const span = qs$('#resultsetCount');
+@@ -310,10 +330,11 @@
+     /* global */sliderPartsPos = -1;
+     const slider = qs$('#slider');
+     const last = sliderParts.length - 1;
++    const initial = Math.max(last, 0);
++    dom.attr(slider, 'max', initial);
++    dom.attr(slider, 'value', initial);
++    dom.attr(slider, 'disabled', last > 0 ? null : '');
++    slider.value = initial;
+-    dom.attr(slider, 'max', last);
+-    dom.attr(slider, 'value', last);
+-    dom.attr(slider, 'disabled', last !== 0 ? null : '');
+-    slider.value = last;
+     updateSlider(last);
+ }
+ 
+@@ -379,6 +400,8 @@
+     dom.on('textarea', 'input', onFilterTextChanged);
+     dom.on('#quit', 'click', quitPicker);
+     dom.on('#slider', 'input', onSliderChanged);
++    dom.on('#sliderStepBack', 'click', ( ) => { stepSlider(-1); });
++    dom.on('#sliderStepForward', 'click', ( ) => { stepSlider(1); });
+     dom.on('#pick', 'click', resetPicker);
+     dom.on('#preview', 'click', onPreviewClicked);
+     dom.on('#moreOrLess > span:first-of-type', 'click', ( ) => { onViewToggled(1); });
