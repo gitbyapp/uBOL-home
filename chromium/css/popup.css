@@ -230,3 +230,9 @@ body.needReload #refresh {
 :root.desktop .tool:hover {
     background-color: var(--popup-toolbar-surface-hover);
 }
+
+/* Accessible keyboard focus for filtering mode choices. */
+.filteringModeSlider span[data-level]:focus-visible {
+    outline: 2px solid var(--ink-1);
+    outline-offset: 3px;
+}
