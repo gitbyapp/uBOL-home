@@ -761,7 +761,7 @@ async function startSession() {
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/userScripts#extension_updates
     // "User scripts are cleared when an extension updates"
     const shouldInject = isNewVersion || permissionsUpdated ||
-        isSideloaded && rulesetConfig.developerMode;
+        userScriptsChanged || isSideloaded && rulesetConfig.developerMode;
     if ( shouldInject || stockUpdated ) {
         deferredTasks.add('registerContentScripts');
     }
