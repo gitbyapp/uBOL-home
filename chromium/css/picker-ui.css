@@ -143,3 +143,33 @@
 #ubol-picker.preview #overlay path {
     display: none;
 }
+
+/* One-step picker adjustments, particularly useful on touch screens. */
+#ubol-picker .sliderStepControls {
+    align-items: center;
+    display: flex;
+    gap: 0.35em;
+}
+#ubol-picker .sliderStepControls #slider {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+#ubol-picker .sliderStepControls button {
+    background-color: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 0.3em;
+    color: var(--ink-1);
+    cursor: pointer;
+    flex: 0 0 32px;
+    font-size: 1.2em;
+    min-height: 32px;
+    padding: 0;
+}
+#ubol-picker .sliderStepControls button:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+#ubol-picker .sliderStepControls button:focus-visible {
+    outline: 2px solid var(--ink-1);
+    outline-offset: 2px;
+}
