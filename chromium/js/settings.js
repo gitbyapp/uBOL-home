@@ -44,6 +44,11 @@ function renderWidgets() {
     }
 
     renderDefaultMode();
+    const managed = new Set(data.managedSettings ?? []);
+    const filteringModeDisabled = data.disabledFeatures?.includes('filteringMode');
+    for ( const input of document.querySelectorAll('#defaultFilteringMode input[type="radio"]') ) {
+        input.disabled = filteringModeDisabled === true;
+    }
 
     qs$('#autoReload input[type="checkbox"]').checked = data.autoReload;
 
@@ -55,18 +60,24 @@ function renderWidgets() {
             input.checked = false;
             dom.attr(input, 'disabled', '');
         }
+        if ( managed.has('showBlockedCount') ) {
+            input.disabled = true;
+        }
     }
 
     {
         const input = qs$('#strictBlockMode input[type="checkbox"]');
         const canStrictBlock = data.hasOmnipotence;
         input.checked = canStrictBlock && data.strictBlockMode;
-        dom.attr(input, 'disabled', canStrictBlock ? null : '');
+        dom.attr(input, 'disabled',
+            canStrictBlock && !managed.has('strictBlockMode') ? null : ''
+        );
     }
 
     {
         const input = qs$('#popupBlockMode input[type="checkbox"]');
         input.checked = data.popupBlockMode;
+        input.disabled = managed.has('popupBlockMode');
     }
 
     {
@@ -94,6 +105,7 @@ async function onFilteringModeChange(ev) {
     const input = ev.target;
     const newLevel = parseInt(input.value, 10);
     const data = self.cachedRulesetData;
+    if ( data.disabledFeatures?.includes('filteringMode') ) { return; }
 
     switch ( newLevel ) {
     case 1: {
