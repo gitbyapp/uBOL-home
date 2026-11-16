@@ -302,6 +302,13 @@ function onMessage(msg) {
         return ubolOverlay.sendMessage({ what: 'terminateCustomFilters' });
     case 'candidatesAtPoint':
         return candidatesAtPoint(msg.mx, msg.my, msg.broad);
+    case 'selectorMatchesDocumentRoot':
+        try {
+            return document.documentElement.matches(msg.selector) ||
+                document.body?.matches(msg.selector) === true;
+        } catch {
+            return false;
+        }
     case 'previewSelector':
         return previewSelector(msg.selector);
     default:
