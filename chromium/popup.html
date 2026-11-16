@@ -18,12 +18,12 @@
 <main>
     <div id="hostname"><span></span>&shy;<span></span></div>
     <!-- -------- -->
-    <div class="filteringModeSlider needData">
+    <div class="filteringModeSlider needData" role="radiogroup" aria-label="popupFilteringModeLabel">
         <div class="filteringModeButton"><div></div></div>
-        <span data-level="0" aria-label="filteringMode0Name"></span>
-        <span data-level="1" aria-label="filteringMode1Name"></span>
-        <span data-level="2" aria-label="filteringMode2Name"></span>
-        <span data-level="3" aria-label="filteringMode3Name"></span>
+        <span data-level="0" aria-label="filteringMode0Name" role="radio" aria-checked="false" tabindex="-1"></span>
+        <span data-level="1" aria-label="filteringMode1Name" role="radio" aria-checked="false" tabindex="-1"></span>
+        <span data-level="2" aria-label="filteringMode2Name" role="radio" aria-checked="false" tabindex="-1"></span>
+        <span data-level="3" aria-label="filteringMode3Name" role="radio" aria-checked="false" tabindex="-1"></span>
     </div>
     <!-- -------- -->
     <div id="filteringModeText" class="needData"><label data-i18n="popupFilteringModeLabel">_</label><br><span>_</span><span></span></div>

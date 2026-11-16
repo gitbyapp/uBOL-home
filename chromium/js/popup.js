@@ -36,6 +36,12 @@ function renderAdminRules() {
     const { disabledFeatures: forbid = [] } = popupPanelData;
     if ( forbid.length === 0 ) { return; }
     dom.body.dataset.forbid = forbid.join(' ');
+    if ( forbid.includes('filteringMode') ) {
+        for ( const option of document.querySelectorAll('.filteringModeSlider span[data-level]') ) {
+            option.tabIndex = -1;
+            option.setAttribute('aria-disabled', 'true');
+        }
+    }
 }
 
 /******************************************************************************/
@@ -45,6 +51,12 @@ const BLOCKING_MODE_MAX = 3;
 async function setFilteringMode(level, commit = false) {
     const modeSlider = qs$('.filteringModeSlider');
     modeSlider.dataset.level = level;
+    const managed = dom.body.dataset.forbid?.split(' ').includes('filteringMode');
+    for ( const option of modeSlider.querySelectorAll('span[data-level]') ) {
+        const selected = Number(option.dataset.level) === level;
+        option.setAttribute('aria-checked', `${selected}`);
+        option.tabIndex = selected && !managed ? 0 : -1;
+    }
     if ( qs$('.filteringModeSlider.moving') === null ) {
         dom.text(
             '#filteringModeText > span:nth-of-type(1)',
@@ -178,16 +190,56 @@ async function commitFilteringMode() {
     dom.on('.filteringModeButton', 'mousedown', startSliding);
 }
 
+function selectMode(level) {
+    if ( dom.body.dataset.forbid?.split(' ').includes('filteringMode') ) {
+        return;
+    }
+    const modeSlider = qs$('.filteringModeSlider');
+    modeSlider.dataset.levelBefore = modeSlider.dataset.level;
+    setFilteringMode(level, true);
+}
+
 dom.on(
     '.filteringModeSlider',
     'click',
     '.filteringModeSlider span[data-level]',
     ev => {
-        const modeSlider = qs$('.filteringModeSlider');
-        modeSlider.dataset.levelBefore = modeSlider.dataset.level;
-        const span = ev.target;
-        const level = parseInt(span.dataset.level, 10);
-        setFilteringMode(level, true);
+        selectMode(Number(ev.target.dataset.level));
+    }
+);
+
+dom.on(
+    '.filteringModeSlider',
+    'keydown',
+    '.filteringModeSlider span[data-level]',
+    ev => {
+        if ( ev.repeat ) { return; }
+        let index = Number(ev.target.dataset.level);
+        switch ( ev.key ) {
+        case 'Enter':
+        case ' ':
+            ev.preventDefault();
+            selectMode(index);
+            return;
+        case 'ArrowRight':
+        case 'ArrowDown':
+            index = Math.min(index + 1, BLOCKING_MODE_MAX);
+            break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+            index = Math.max(index - 1, 0);
+            break;
+        case 'Home':
+            index = 0;
+            break;
+        case 'End':
+            index = BLOCKING_MODE_MAX;
+            break;
+        default:
+            return;
+        }
+        ev.preventDefault();
+        qs$(`.filteringModeSlider span[data-level="${index}"]`).focus();
     }
 );
 
@@ -314,6 +366,8 @@ async function init() {
     } catch {
     }
     if ( url === undefined ) { return false; }
+    if ( url.hostname === '' ) { return false; }
+    if ( /^https?:/.test(url.protocol) === false ) { return false; }
 
     const response = await sendMessage({
         what: 'popupPanelData',
