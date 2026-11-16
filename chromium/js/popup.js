@@ -37,7 +37,7 @@ function renderAdminRules() {
     if ( forbid.length === 0 ) { return; }
     dom.body.dataset.forbid = forbid.join(' ');
     if ( forbid.includes('filteringMode') ) {
-        for ( const option of qs$('.filteringModeSlider').querySelectorAll('span[data-level]') ) {
+        for ( const option of document.querySelectorAll('.filteringModeSlider span[data-level]') ) {
             option.tabIndex = -1;
             option.setAttribute('aria-disabled', 'true');
         }
@@ -51,10 +51,11 @@ const BLOCKING_MODE_MAX = 3;
 async function setFilteringMode(level, commit = false) {
     const modeSlider = qs$('.filteringModeSlider');
     modeSlider.dataset.level = level;
+    const managed = dom.body.dataset.forbid?.split(' ').includes('filteringMode');
     for ( const option of modeSlider.querySelectorAll('span[data-level]') ) {
-        option.setAttribute('aria-pressed',
-            `${Number(option.dataset.level) === level}`
-        );
+        const selected = Number(option.dataset.level) === level;
+        option.setAttribute('aria-checked', `${selected}`);
+        option.tabIndex = selected && !managed ? 0 : -1;
     }
     if ( qs$('.filteringModeSlider.moving') === null ) {
         dom.text(
@@ -203,7 +204,7 @@ dom.on(
     'click',
     '.filteringModeSlider span[data-level]',
     ev => {
-        selectMode(parseInt(ev.target.dataset.level, 10));
+        selectMode(Number(ev.target.dataset.level));
     }
 );
 
@@ -213,37 +214,32 @@ dom.on(
     '.filteringModeSlider span[data-level]',
     ev => {
         if ( ev.repeat ) { return; }
-        const pressed = ev.key;
-        const current = Number(qs$('.filteringModeSlider').dataset.level);
-        let level;
-        switch ( pressed ) {
+        let index = Number(ev.target.dataset.level);
+        switch ( ev.key ) {
         case 'Enter':
         case ' ':
-            level = Number(ev.target.dataset.level);
+            ev.preventDefault();
+            selectMode(index);
+            return;
+        case 'ArrowRight':
+        case 'ArrowDown':
+            index = Math.min(index + 1, BLOCKING_MODE_MAX);
             break;
         case 'ArrowLeft':
-        case 'ArrowDown':
-            level = Math.max(0, current - 1);
-            break;
-        case 'ArrowRight':
         case 'ArrowUp':
-            level = Math.min(BLOCKING_MODE_MAX, current + 1);
+            index = Math.max(index - 1, 0);
             break;
         case 'Home':
-            level = 0;
+            index = 0;
             break;
         case 'End':
-            level = BLOCKING_MODE_MAX;
+            index = BLOCKING_MODE_MAX;
             break;
         default:
             return;
         }
         ev.preventDefault();
-        if ( dom.body.dataset.forbid?.split(' ').includes('filteringMode') ) {
-            return;
-        }
-        qs$(`.filteringModeSlider span[data-level="${level}"]`).focus();
-        selectMode(level);
+        qs$(`.filteringModeSlider span[data-level="${index}"]`).focus();
     }
 );
 
@@ -370,6 +366,8 @@ async function init() {
     } catch {
     }
     if ( url === undefined ) { return false; }
+    if ( url.hostname === '' ) { return false; }
+    if ( /^https?:/.test(url.protocol) === false ) { return false; }
 
     const response = await sendMessage({
         what: 'popupPanelData',
