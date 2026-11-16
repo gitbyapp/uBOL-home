@@ -37,10 +37,6 @@ body[data-forbid~="dashboard"] #dashboard-nav [data-pane="filters"],
 body[data-forbid~="dashboard"] section[data-pane="filters"] {
     display: none;
     }
-body[data-forbid~="filteringMode"] section[data-pane="settings"] > div:has(> h3[data-i18n="defaultFilteringModeSectionLabel"]),
-body[data-forbid~="filteringMode"] section[data-pane="settings"] > div:has(> h3[data-i18n="filteringMode0Name"]) {
-    display: none;
-    }
 body[data-forbid~="picker"] #dashboard-nav [data-pane="filters"],
 body[data-forbid~="picker"] section[data-pane="filters"] {
     display: none;
@@ -428,4 +424,12 @@ body.busy section[data-pane="busy"] .fa-icon {
     fill: var(--surface-3);
     font-size: 4em;
     margin: 2em;
+}
+/* Managed filtering mode remains discoverable, but cannot be changed. */
+body[data-forbid~="filteringMode"] #defaultFilteringMode {
+    opacity: 0.6;
+}
+body[data-forbid~="filteringMode"] #defaultFilteringMode .filteringModeCard {
+    cursor: not-allowed;
+    pointer-events: none;
 }
