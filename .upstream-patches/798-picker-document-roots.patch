@@ -1,0 +1,40 @@
+diff --git a/platform/mv3/extension/js/scripting/picker.js b/platform/mv3/extension/js/scripting/picker.js
+--- a/platform/mv3/extension/js/scripting/picker.js
++++ b/platform/mv3/extension/js/scripting/picker.js
+@@ -78,7 +78,7 @@
+  * 
+  * */
+ 
++function candidatesAtPoint(x, y, includeDocumentRoots = false) {
+-function candidatesAtPoint(x, y) {
+     // We need at least one element.
+     let elem = null;
+     if ( typeof x === 'number' ) {
+@@ -147,7 +147,12 @@
+     if ( listParts.length === 0 ) { return; }
+ 
+     const sliderCandidates = [];
++    // Keep potentially page-wide roots out of the default slider.
++    // Include them only when the user explicitly requests advanced inspection.
++    const n = includeDocumentRoots
++        ? listParts.length
++        : Math.max(listParts.length - 2, 0);
++    for ( let i = 0; i < n; i++ ) {
+-    for ( let i = 0, n = Math.max(listParts.length-2, 0); i < n; i++ ) {
+         sliderCandidates.push(listParts[i]);
+         for ( let j = i + 1; j < n; j++ ) {
+             sliderCandidates.push([
+diff --git a/platform/mv3/extension/js/picker-ui.js b/platform/mv3/extension/js/picker-ui.js
+--- a/platform/mv3/extension/js/picker-ui.js
++++ b/platform/mv3/extension/js/picker-ui.js
+@@ -97,7 +97,9 @@
+         what: 'candidatesAtPoint',
+         mx: ev.clientX,
+         my: ev.clientY,
++        // Ctrl+click is an explicit shortcut; in the expanded picker the
++        // document-root ancestors are available on touch devices as well.
++        broad: ev.ctrlKey || Number(dom.root.dataset.view) === 2,
+-        broad: ev.ctrlKey,
+     }).then(details => {
+         showDialog(details);
+     });
