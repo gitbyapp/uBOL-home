@@ -1,0 +1,97 @@
+diff --git a/platform/mv3/extension/js/background.js b/platform/mv3/extension/js/background.js
+--- a/platform/mv3/extension/js/background.js
++++ b/platform/mv3/extension/js/background.js
+@@ -432,8 +432,18 @@
+             getAdminRulesets(),
+             adminReadEx('disabledFeatures'),
+         ]);
++        const managedSettings = await Promise.all([
++            adminReadEx('popupBlockMode'),
++            adminReadEx('showBlockedCount'),
++            adminReadEx('strictBlockMode'),
++        ]);
+         process.firstRun = false;
+         return {
++            managedSettings: [
++                'popupBlockMode',
++                'showBlockedCount',
++                'strictBlockMode',
++            ].filter((key, i) => managedSettings[i] !== undefined),
+             hasOmnipotence,
+             defaultFilteringMode,
+             enabledRulesets,
+diff --git a/platform/mv3/extension/js/settings.js b/platform/mv3/extension/js/settings.js
+--- a/platform/mv3/extension/js/settings.js
++++ b/platform/mv3/extension/js/settings.js
+@@ -44,6 +44,11 @@
+     }
+ 
+     renderDefaultMode();
++    const managed = new Set(data.managedSettings ?? []);
++    const filteringModeDisabled = data.disabledFeatures?.includes('filteringMode');
++    for ( const input of document.querySelectorAll('#defaultFilteringMode input[type="radio"]') ) {
++        input.disabled = filteringModeDisabled === true;
++    }
+ 
+     qs$('#autoReload input[type="checkbox"]').checked = data.autoReload;
+ 
+@@ -55,18 +60,24 @@
+             input.checked = false;
+             dom.attr(input, 'disabled', '');
+         }
++        if ( managed.has('showBlockedCount') ) {
++            input.disabled = true;
++        }
+     }
+ 
+     {
+         const input = qs$('#strictBlockMode input[type="checkbox"]');
+         const canStrictBlock = data.hasOmnipotence;
+         input.checked = canStrictBlock && data.strictBlockMode;
++        dom.attr(input, 'disabled',
++            canStrictBlock && !managed.has('strictBlockMode') ? null : ''
++        );
+-        dom.attr(input, 'disabled', canStrictBlock ? null : '');
+     }
+ 
+     {
+         const input = qs$('#popupBlockMode input[type="checkbox"]');
+         input.checked = data.popupBlockMode;
++        input.disabled = managed.has('popupBlockMode');
+     }
+ 
+     {
+@@ -94,6 +105,7 @@
+     const input = ev.target;
+     const newLevel = parseInt(input.value, 10);
+     const data = self.cachedRulesetData;
++    if ( data.disabledFeatures?.includes('filteringMode') ) { return; }
+ 
+     switch ( newLevel ) {
+     case 1: {
+diff --git a/platform/mv3/extension/css/settings.css b/platform/mv3/extension/css/settings.css
+--- a/platform/mv3/extension/css/settings.css
++++ b/platform/mv3/extension/css/settings.css
+@@ -37,10 +37,6 @@
+ body[data-forbid~="dashboard"] section[data-pane="filters"] {
+     display: none;
+     }
+-body[data-forbid~="filteringMode"] section[data-pane="settings"] > div:has(> h3[data-i18n="defaultFilteringModeSectionLabel"]),
+-body[data-forbid~="filteringMode"] section[data-pane="settings"] > div:has(> h3[data-i18n="filteringMode0Name"]) {
+-    display: none;
+-    }
+ body[data-forbid~="picker"] #dashboard-nav [data-pane="filters"],
+ body[data-forbid~="picker"] section[data-pane="filters"] {
+     display: none;
+@@ -429,3 +425,11 @@
+     font-size: 4em;
+     margin: 2em;
+ }
++/* Managed filtering controls stay visible but cannot be changed. */
++body[data-forbid~="filteringMode"] #defaultFilteringMode .filteringModeCard {
++    cursor: not-allowed;
++    opacity: 0.65;
++}
++body[data-forbid~="filteringMode"] #defaultFilteringMode .filteringModeCard:hover {
++    background-color: inherit;
++}
