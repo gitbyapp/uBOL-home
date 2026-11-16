@@ -97,7 +97,9 @@ function onSvgClicked(ev) {
         what: 'candidatesAtPoint',
         mx: ev.clientX,
         my: ev.clientY,
-        broad: ev.ctrlKey,
+        // Ctrl+click is an explicit shortcut; in the expanded picker the
+        // document-root ancestors are available on touch devices as well.
+        broad: ev.ctrlKey || Number(dom.root.dataset.view) === 2,
     }).then(details => {
         showDialog(details);
     });
