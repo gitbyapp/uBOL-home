@@ -425,11 +425,11 @@ body.busy section[data-pane="busy"] .fa-icon {
     font-size: 4em;
     margin: 2em;
 }
-/* Managed filtering mode remains discoverable, but cannot be changed. */
-body[data-forbid~="filteringMode"] #defaultFilteringMode {
-    opacity: 0.6;
-}
+/* Managed filtering controls stay visible but cannot be changed. */
 body[data-forbid~="filteringMode"] #defaultFilteringMode .filteringModeCard {
     cursor: not-allowed;
-    pointer-events: none;
+    opacity: 0.65;
+}
+body[data-forbid~="filteringMode"] #defaultFilteringMode .filteringModeCard:hover {
+    background-color: inherit;
 }
