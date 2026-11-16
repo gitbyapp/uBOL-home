@@ -36,6 +36,12 @@ function renderAdminRules() {
     const { disabledFeatures: forbid = [] } = popupPanelData;
     if ( forbid.length === 0 ) { return; }
     dom.body.dataset.forbid = forbid.join(' ');
+    if ( forbid.includes('filteringMode') ) {
+        for ( const option of qs$('.filteringModeSlider').querySelectorAll('span[data-level]') ) {
+            option.tabIndex = -1;
+            option.setAttribute('aria-disabled', 'true');
+        }
+    }
 }
 
 /******************************************************************************/
@@ -45,6 +51,11 @@ const BLOCKING_MODE_MAX = 3;
 async function setFilteringMode(level, commit = false) {
     const modeSlider = qs$('.filteringModeSlider');
     modeSlider.dataset.level = level;
+    for ( const option of modeSlider.querySelectorAll('span[data-level]') ) {
+        option.setAttribute('aria-pressed',
+            `${Number(option.dataset.level) === level}`
+        );
+    }
     if ( qs$('.filteringModeSlider.moving') === null ) {
         dom.text(
             '#filteringModeText > span:nth-of-type(1)',
@@ -178,16 +189,61 @@ async function commitFilteringMode() {
     dom.on('.filteringModeButton', 'mousedown', startSliding);
 }
 
+function selectMode(level) {
+    if ( dom.body.dataset.forbid?.split(' ').includes('filteringMode') ) {
+        return;
+    }
+    const modeSlider = qs$('.filteringModeSlider');
+    modeSlider.dataset.levelBefore = modeSlider.dataset.level;
+    setFilteringMode(level, true);
+}
+
 dom.on(
     '.filteringModeSlider',
     'click',
     '.filteringModeSlider span[data-level]',
     ev => {
-        const modeSlider = qs$('.filteringModeSlider');
-        modeSlider.dataset.levelBefore = modeSlider.dataset.level;
-        const span = ev.target;
-        const level = parseInt(span.dataset.level, 10);
-        setFilteringMode(level, true);
+        selectMode(parseInt(ev.target.dataset.level, 10));
+    }
+);
+
+dom.on(
+    '.filteringModeSlider',
+    'keydown',
+    '.filteringModeSlider span[data-level]',
+    ev => {
+        if ( ev.repeat ) { return; }
+        const pressed = ev.key;
+        const current = Number(qs$('.filteringModeSlider').dataset.level);
+        let level;
+        switch ( pressed ) {
+        case 'Enter':
+        case ' ':
+            level = Number(ev.target.dataset.level);
+            break;
+        case 'ArrowLeft':
+        case 'ArrowDown':
+            level = Math.max(0, current - 1);
+            break;
+        case 'ArrowRight':
+        case 'ArrowUp':
+            level = Math.min(BLOCKING_MODE_MAX, current + 1);
+            break;
+        case 'Home':
+            level = 0;
+            break;
+        case 'End':
+            level = BLOCKING_MODE_MAX;
+            break;
+        default:
+            return;
+        }
+        ev.preventDefault();
+        if ( dom.body.dataset.forbid?.split(' ').includes('filteringMode') ) {
+            return;
+        }
+        qs$(`.filteringModeSlider span[data-level="${level}"]`).focus();
+        selectMode(level);
     }
 );
 
