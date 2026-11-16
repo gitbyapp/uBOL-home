@@ -1,0 +1,115 @@
+diff --git a/platform/mv3/extension/js/scripting/picker.js b/platform/mv3/extension/js/scripting/picker.js
+--- a/platform/mv3/extension/js/scripting/picker.js
++++ b/platform/mv3/extension/js/scripting/picker.js
+@@ -78,7 +78,7 @@
+  * 
+  * */
+ 
++function candidatesAtPoint(x, y, includeDocumentRoots = false) {
+-function candidatesAtPoint(x, y) {
+     // We need at least one element.
+     let elem = null;
+     if ( typeof x === 'number' ) {
+@@ -147,7 +147,12 @@
+     if ( listParts.length === 0 ) { return; }
+ 
+     const sliderCandidates = [];
++    // Keep potentially page-wide roots out of the default slider.
++    // Include them only when the user explicitly requests advanced inspection.
++    const n = includeDocumentRoots
++        ? listParts.length
++        : Math.max(listParts.length - 2, 0);
++    for ( let i = 0; i < n; i++ ) {
+-    for ( let i = 0, n = Math.max(listParts.length-2, 0); i < n; i++ ) {
+         sliderCandidates.push(listParts[i]);
+         for ( let j = i + 1; j < n; j++ ) {
+             sliderCandidates.push([
+@@ -297,6 +302,13 @@
+         return ubolOverlay.sendMessage({ what: 'terminateCustomFilters' });
+     case 'candidatesAtPoint':
+         return candidatesAtPoint(msg.mx, msg.my, msg.broad);
++    case 'selectorMatchesDocumentRoot':
++        try {
++            return document.documentElement.matches(msg.selector) ||
++                document.body?.matches(msg.selector) === true;
++        } catch {
++            return false;
++        }
+     case 'previewSelector':
+         return previewSelector(msg.selector);
+     default:
+diff --git a/platform/mv3/extension/js/picker-ui.js b/platform/mv3/extension/js/picker-ui.js
+--- a/platform/mv3/extension/js/picker-ui.js
++++ b/platform/mv3/extension/js/picker-ui.js
+@@ -21,6 +21,7 @@
+ 
+ import { dom, qs$, qsa$ } from './dom.js';
+ import { localRead, localWrite } from './ext.js';
++import { i18n$ } from './i18n.js';
+ import { ExtSelectorCompiler } from './static-filtering-parser.js';
+ import { toolOverlay } from './tool-overlay-ui.js';
+ 
+@@ -97,7 +98,9 @@
+         what: 'candidatesAtPoint',
+         mx: ev.clientX,
+         my: ev.clientY,
++        // Ctrl+click is an explicit shortcut; in the expanded picker the
++        // document-root ancestors are available on touch devices as well.
++        broad: ev.ctrlKey || Number(dom.root.dataset.view) === 2,
+-        broad: ev.ctrlKey,
+     }).then(details => {
+         showDialog(details);
+     });
+@@ -228,6 +231,13 @@
+ async function onCreateClicked() {
+     const selector = validateSelector(qs$('textarea').value);
+     if ( selector === undefined ) { return; }
++    const rootMatched = await toolOverlay.postMessage({
++        what: 'selectorMatchesDocumentRoot',
++        selector,
++    });
++    if ( rootMatched === true && self.confirm(i18n$('pickerRootWarning')) !== true ) {
++        return;
++    }
+     await toolOverlay.postMessage({ what: 'terminateCustomFilters' });
+     await toolOverlay.sendMessage({
+         what: 'addCustomFilters',
+diff --git a/platform/mv3/extension/_locales/en/messages.json b/platform/mv3/extension/_locales/en/messages.json
+--- a/platform/mv3/extension/_locales/en/messages.json
++++ b/platform/mv3/extension/_locales/en/messages.json
+@@ -116,7 +116,7 @@
+     "description": "Text label heading the import/export area of custom filters"
+   },
+   "customFiltersImportTextareaPlaceholder": {
++    "message": "Specific cosmetic/scriptlet filters to add",
+-    "message": "Specific cosmetic filters to add",
+     "description": "Placeholder text which describes the purpose of the textarea widget"
+   },
+   "userScriptsInfo": {
+@@ -256,12 +256,12 @@
+     "description": "This describes the 'complete' filtering mode"
+   },
+   "noFilteringModeDescription": {
++    "message": "List of websites for which no filtering will take place.",
++    "description": "A short description for the editable field which lists trusted sites"
+-      "message": "List of websites for which no filtering will take place.",
+-      "description": "A short description for the editable field which lists trusted sites"
+   },
+   "noFilteringModePlaceholder": {
++    "message": "[hostnames only]\nexample.com\ngames.example\n...",
++    "description": "Default text for in edit field"
+-      "message": "[hostnames only]\nexample.com\ngames.example\n...",
+-      "description": "Default text for in edit field"
+   },
+   "behaviorSectionLabel": {
+     "message": "Behavior",
+@@ -462,5 +462,9 @@
+   "unpickerUsage": {
+     "message": "Select a filter below to highlight matching elements in the web page. Click the trash can to remove a filter.",
+     "description": "Summary description on how to use the tool to remove custom filters"
++  },
++  "pickerRootWarning": {
++    "message": "This filter matches the page root and could hide the entire page. Create it anyway?",
++    "description": "Confirmation before saving a cosmetic filter affecting html or body"
+   }
+ }

@@ -21,6 +21,7 @@
 
 import { dom, qs$, qsa$ } from './dom.js';
 import { localRead, localWrite } from './ext.js';
+import { i18n$ } from './i18n.js';
 import { ExtSelectorCompiler } from './static-filtering-parser.js';
 import { toolOverlay } from './tool-overlay-ui.js';
 
@@ -97,7 +98,9 @@ function onSvgClicked(ev) {
         what: 'candidatesAtPoint',
         mx: ev.clientX,
         my: ev.clientY,
-        broad: ev.ctrlKey,
+        // Ctrl+click is an explicit shortcut; in the expanded picker the
+        // document-root ancestors are available on touch devices as well.
+        broad: ev.ctrlKey || Number(dom.root.dataset.view) === 2,
     }).then(details => {
         showDialog(details);
     });
@@ -228,6 +231,13 @@ function updatePreview(state) {
 async function onCreateClicked() {
     const selector = validateSelector(qs$('textarea').value);
     if ( selector === undefined ) { return; }
+    const rootMatched = await toolOverlay.postMessage({
+        what: 'selectorMatchesDocumentRoot',
+        selector,
+    });
+    if ( rootMatched === true && self.confirm(i18n$('pickerRootWarning')) !== true ) {
+        return;
+    }
     await toolOverlay.postMessage({ what: 'terminateCustomFilters' });
     await toolOverlay.sendMessage({
         what: 'addCustomFilters',
