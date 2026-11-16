@@ -144,7 +144,6 @@
     display: none;
 }
 
-/* One-step picker adjustments, particularly useful on touch screens. */
 #ubol-picker .sliderStepControls {
     align-items: center;
     display: flex;
