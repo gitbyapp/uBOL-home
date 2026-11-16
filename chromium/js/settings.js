@@ -30,6 +30,11 @@ function renderAdminRules() {
     const { disabledFeatures: forbid = [] } = self.cachedRulesetData;
     if ( forbid.length === 0 ) { return; }
     dom.body.dataset.forbid = forbid.join(' ');
+    if ( forbid.includes('filteringMode') ) {
+        for ( const input of document.querySelectorAll('#defaultFilteringMode input[type="radio"]') ) {
+            input.disabled = true;
+        }
+    }
     if ( forbid.includes('dashboard') ) {
         dom.body.dataset.pane = 'about';
     }
