@@ -179,6 +179,9 @@ function onSliderChanged(ev) {
 function updateSlider(i) {
     if ( i === sliderPartsPos ) { return; }
     sliderPartsPos = i;
+    qs$('#slider').value = i;
+    qs$('#sliderStepBack').disabled = i <= 0;
+    qs$('#sliderStepForward').disabled = i >= sliderParts.length - 1;
     dom.cl.remove('#candidateFilters [data-part]', 'on');
     const parts = sliderParts[i];
     for ( const address of parts ) {
@@ -187,6 +190,14 @@ function updateSlider(i) {
     const selector = selectorFromCandidates();
     qs$('textarea').value = selector;
     highlightCandidate();
+}
+
+/******************************************************************************/
+
+function stepSlider(direction) {
+    const next = sliderPartsPos + direction;
+    if ( next < 0 || next >= sliderParts.length ) { return; }
+    updateSlider(next);
 }
 
 /******************************************************************************/
@@ -379,6 +390,8 @@ function startPicker() {
     dom.on('textarea', 'input', onFilterTextChanged);
     dom.on('#quit', 'click', quitPicker);
     dom.on('#slider', 'input', onSliderChanged);
+    dom.on('#sliderStepBack', 'click', ( ) => { stepSlider(-1); });
+    dom.on('#sliderStepForward', 'click', ( ) => { stepSlider(1); });
     dom.on('#pick', 'click', resetPicker);
     dom.on('#preview', 'click', onPreviewClicked);
     dom.on('#moreOrLess > span:first-of-type', 'click', ( ) => { onViewToggled(1); });
