@@ -1,23 +1,42 @@
-# Upstream #786: Generic cosmetic filters in imported lists
+# uBOL upstream #786 — Imported generic cosmetic filters
 
-Upstream: https://github.com/uBlockOrigin/uBOL-home/issues/786
+Tracking issue: https://github.com/uBlockOrigin/uBOL-home/issues/786
 
-## Source findings (2026-11-16)
+Status: **research / unimplemented**, as of 2026-11-16. Do not describe this document as a working feature or PR-ready fix. Raymond Hill explicitly plans incremental support but has given no ETA.
 
-In `gorhill/uBlock/platform/mv3/extension/js/offscreen/compile-filters.js`:
+## Root cause in current source
 
-- `compileFilters()` skips cosmetic rules for which `parser.hasOptions()` is false.
-- The result object tracks `specificCosmeticDetails` and `scriptletDetails` but no imported-generic cosmetic payload.
-- `toMv3Data()` has a code-emission path for specific cosmetic filters but none for generic imported ones.
+- `platform/mv3/extension/js/offscreen/compile-filters.js`: `compileFilters()` skips cosmetic rules where `parser.hasOptions()` is false. This includes generic `##.tjtagmanager[data-ad_id]`.
+- The intermediate compiled object stores `specificCosmeticDetails` and `scriptletDetails` but does not retain generic selectors.
+- `toMv3Data()` compiles specific cosmetic and scriptlet code but provides no imported-generic output.
+- `mergeCompiledData()` merges DNR/specific/scriptlet entries from different imported lists. Any new generic data must be included there and maintain deduplication and exception semantics.
+- `platform/mv3/extension/js/compiled-filters.js`: `prepareUserScripts()` registers imported scripts using filtering-mode exclusions for `none` and `basic`. **Generic cosmetic filtering should be limited to Complete mode**, not treated as ordinary specific imported filters that work in Optimal mode.
+- The stock generic engine (`scripting-manager.js`, `scripting/css-generic.js`) uses specialized hashed selector maps and bounded DOM surveys. Naively injecting all imported selectors at document start on every site would risk CPU, memory, script-size, and compatibility regressions.
 
-This agrees with Raymond Hill's clarification on the upstream issue that support has not yet been implemented.
+## Suggested minimal upstream design discussion
 
-## Scope for a safe implementation
+1. Decide which plain CSS generic syntax and generic exceptions are in scope for a first iteration. Do not let untrusted imported lists inject arbitrary procedural JS.
+2. Define a compact compiled representation with per-list ownership, stable deduplication, and explicit exception handling; cache it alongside specific cosmetic data.
+3. Reuse or extend the **bounded generic matching engine**, instead of generating an unrestricted global CSS stylesheet.
+4. Apply selectors only to the appropriate browsing contexts at **Complete** filtering level, respecting site allow-lists, browser permissions, all frames, and list enable/disable.
+5. Ensure recompile/unregister when an imported list updates, is removed, or is disabled; preserve correct behavior across restarts and permission changes.
+6. Set measurable performance and memory budgets before deciding output-size limits; test large lists as well as one-rule examples.
+7. Add a dedicated source-level parser/compile/inject test suite before requesting a maintainer merge.
 
-1. Agree with the maintainer on generic selector representation and efficient injection strategy before coding.
-2. Define rule/exception handling, multiple-list deduplication and supported syntax.
-3. Add lifecycle hooks for enabling, disabling, updating and removing imported lists.
-4. Validate performance overhead and site filtering modes across browsers.
-5. Include regression cases for `##.tjtagmanager[data-ad_id]`, hostname-specific rules, exceptions and large imported lists.
+## Acceptance tests needed
 
-Status: architecture investigation only. No generic-filter support code has been implemented or tested.
+| Scenario | Expected |
+| --- | --- |
+| Import list with `##.tjtagmanager[data-ad_id]` | Matching ad container hidden in Complete mode |
+| Same page in Basic and Optimal | Imported generic filter not applied |
+| Domain-specific `example.org##.ad` | Existing specific filtering unchanged |
+| Exception `#@#` or domain exclusion | Correctly takes precedence as defined |
+| Two lists with overlapping selectors | Deduplicate without dropping a surviving rule |
+| Disable, update, remove imported list | All corresponding generic effects added/removed appropriately |
+| Hot changes to browser userScripts permissions | Reconciliation and registration reliable |
+| Large real-world external list | Bounded page CPU, memory, and output script sizes |
+| Browser matrix | Chromium/Edge, Firefox, Safari behavior verified |
+
+## Not an implemented fix
+
+No generic-filter implementation, new compiler, browser integration test, performance measurement, or production-ready patch has been completed. Do **not** merge a shortcut that treats all generic selectors as wildcard-specific filters without maintainer review: the performance and filtering-mode semantics differ materially.
