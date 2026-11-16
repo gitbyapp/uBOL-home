@@ -177,11 +177,20 @@ function onSliderChanged(ev) {
 }
 
 function updateSlider(i) {
+    if ( sliderParts.length === 0 ) {
+        sliderPartsPos = -1;
+        qs$('textarea').value = '';
+        qs$('#sliderStepBack').disabled = true;
+        qs$('#sliderStepForward').disabled = true;
+        dom.attr('#create', 'disabled', '');
+        return;
+    }
+    i = Math.min(Math.max(i, 0), sliderParts.length - 1);
     if ( i === sliderPartsPos ) { return; }
     sliderPartsPos = i;
     qs$('#slider').value = i;
-    qs$('#sliderStepBack').disabled = i <= 0;
-    qs$('#sliderStepForward').disabled = i >= sliderParts.length - 1;
+    qs$('#sliderStepBack').disabled = i === 0;
+    qs$('#sliderStepForward').disabled = i === sliderParts.length - 1;
     dom.cl.remove('#candidateFilters [data-part]', 'on');
     const parts = sliderParts[i];
     for ( const address of parts ) {
@@ -321,10 +330,11 @@ function showDialog(msg) {
     /* global */sliderPartsPos = -1;
     const slider = qs$('#slider');
     const last = sliderParts.length - 1;
-    dom.attr(slider, 'max', last);
-    dom.attr(slider, 'value', last);
-    dom.attr(slider, 'disabled', last !== 0 ? null : '');
-    slider.value = last;
+    const initial = Math.max(last, 0);
+    dom.attr(slider, 'max', initial);
+    dom.attr(slider, 'value', initial);
+    dom.attr(slider, 'disabled', last > 0 ? null : '');
+    slider.value = initial;
     updateSlider(last);
 }
 
